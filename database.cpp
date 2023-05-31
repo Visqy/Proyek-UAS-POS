@@ -1,7 +1,8 @@
 #include <iostream>
-#include <sqlite3.h>
-#include <filesystem>
 #include <vector>
+#include <string>
+#include <filesystem>
+#include <sqlite3.h>
 
 using namespace std;
 
@@ -31,93 +32,97 @@ struct Transaksi
 {
     int nomorTransaksi;
     string waktuTransaksi;
+    int hargaTransaksi;
     vector<Barang> daftarBarangTransaksi;
     string namaUser;
 };
 
-vector<User> User;
-vector<DaftarBarang> DaftarBarang;
-vector<Transaksi> Transaksi;
+vector<Transaksi> TransaksiList;
+vector<DaftarBarang> DaftarBarangs;
+vector<User> users;
 
-static int table1Callback(void * /*data*/, int argc, char **argv, char ** /*azColName*/)
+static int callbackUsers(void *, int argc, char **argv, char **)
 {
     User rowData;
 
-    // Mendapatkan nilai kolom dari setiap baris
     rowData.id = argv[0];
     rowData.pass = argv[1];
     rowData.type = stoi(argv[2]);
 
-    // Menambahkan data ke dalam vektor global User
-    User.push_back(rowData);
-
+    users.push_back(rowData);
     return 0;
 }
 
-static int table2Callback(void * /*data*/, int argc, char **argv, char ** /*azColName*/)
+static int callbackDaftarBarangs(void *, int argc, char **argv, char **)
 {
     DaftarBarang rowData;
 
-    // Mendapatkan nilai kolom dari setiap baris
     rowData.id = stoi(argv[0]);
     rowData.nama = argv[1];
     rowData.qty = stoi(argv[2]);
-    rowData.harga = stoi(argv[2]);
+    rowData.harga = stoi(argv[3]);
 
-    // Menambahkan data ke dalam vektor global Barang
-    Barang.push_back(rowData);
+    DaftarBarangs.push_back(rowData);
 
     return 0;
 }
 
 bool checkDB(sqlite3 *db)
 {
-    sqlite3 *db;
     int rc;
-    char *sql;
+    char *errMsg;
 
+    // Memeriksa apakah file database sudah ada
     if (filesystem::exists("database.db"))
     {
         cout << "Database sudah dibuat" << endl;
-        return (true);
+        return true;
     }
-    try
+    else
     {
+
+        // Membuat file database baru dan tabel
         rc = sqlite3_open("database.db", &db);
         if (rc)
         {
-            throw runtime_error("Tidak dapat membuka database: " + string(sqlite3_errmsg(db)));
+            cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+            return false;
         }
-        sql = "CREATE TABLE USER ("
-              "USER           TEXT PRIMARY KEY     NOT NULL,"
-              "PASSWORD       TEXT    NOT NULL,"
-              "TYPE           INT     NOT NULL);"
-              "CREATE TABLE BARANG ("
-              "KODE INT PRIMARY KEY   NOT NULL,"
-              "NAMA           TEXT    NOT NULL,"
-              "QTY            INT     NOT NULL,"
-              "HARGA          INT     NOT NULL);"
-              "CREATE TABLE TRANSAKSI ("
-              "KODE INT PRIMARY KEY   NOT NULL,"
-              "WAKTU        TEXT    NOT NULL,"
-              "TRANSAKSI      TEXT    NOT NULL,"
-              "HARGA          INT     NOT NULL,"
-              "USER           INT     NOT NULL);";
-        rc = sqlite3_exec(db, sql, nullptr, nullptr, nullptr);
 
+        // Membuat tabel USER, BARANG, dan TRANSAKSI jika belum ada
+        string createTableQuery = "CREATE TABLE IF NOT EXISTS USER ("
+                                  "USER           TEXT PRIMARY KEY     NOT NULL,"
+                                  "PASSWORD       TEXT    NOT NULL,"
+                                  "TYPE           INT     NOT NULL);"
+                                  "CREATE TABLE IF NOT EXISTS DAFTARBARANG ("
+                                  "KODEBARANG INT PRIMARY KEY   NOT NULL,"
+                                  "NAMA_BARANG         TEXT    NOT NULL,"
+                                  "QTY            INT     NOT NULL,"
+                                  "HARGA          INT     NOT NULL);"
+                                  "CREATE TABLE IF NOT EXISTS TRANSAKSI ("
+                                  "TRANSAKSI_ID INT PRIMARY KEY   NOT NULL,"
+                                  "WAKTU        TEXT    NOT NULL,"
+                                  "HARGA          INT     NOT NULL,"
+                                  "USER           TEXT     NOT NULL);"
+                                  "CREATE TABLE BARANG ("
+                                  "ID INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                  "TRANSAKSI_ID INTEGER, "
+                                  "NAMABARANG TEXT, "
+                                  "QTY INTEGER, "
+                                  "HARGA INTEGER, "
+                                  "FOREIGN KEY (TRANSAKSI_ID) REFERENCES Transaksi(TRANSAKSI_ID));";
+
+        rc = sqlite3_exec(db, createTableQuery.c_str(), nullptr, nullptr, &errMsg);
         if (rc != SQLITE_OK)
         {
-            throw runtime_error("Kesalahan dalam membuat tabel: " + string(sqlite3_errmsg(db)));
+            cout << "Kesalahan dalam membuat tabel: " << errMsg << endl;
+            sqlite3_free(errMsg);
+            return false;
         }
-    }
-    catch (const exception &e)
-    {
-        cout << "Terjadi kesalahan: " << e.what() << endl;
-        return (false);
-    }
 
-    cout << "Database berhasil dibuat" << endl;
-    return (true);
+        cout << "Database berhasil dibuat" << endl;
+        return true;
+    }
 }
 
 bool insertDB(sqlite3 *db, const string &tableName, const vector<string> &columns, const vector<string> &values)
@@ -128,30 +133,110 @@ bool insertDB(sqlite3 *db, const string &tableName, const vector<string> &column
         return false;
     }
 
-    string query = "INSERT INTO " + tableName + " (";
-    for (size_t i = 0; i < columns.size(); ++i)
-    {
-        query += columns[i];
-        if (i != columns.size() - 1)
-        {
-            query += ", ";
-        }
-    }
-    query += ") VALUES (";
-    for (size_t i = 0; i < values.size(); ++i)
-    {
-        query += "'" + values[i] + "'";
-        if (i != values.size() - 1)
-        {
-            query += ", ";
-        }
-    }
-    query += ")";
+    int rc;
 
-    int rc = sqlite3_exec(db, query.c_str(), nullptr, nullptr, nullptr);
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+
+    string insertQuery = "INSERT INTO " + tableName + " (";
+    for (size_t i = 0; i < columns.size(); i++)
+    {
+        insertQuery += columns[i];
+        if (i != columns.size() - 1)
+            insertQuery += ",";
+    }
+    insertQuery += ") VALUES (";
+
+    for (size_t i = 0; i < values.size(); i++)
+    {
+        insertQuery += "'" + values[i] + "'";
+        if (i != values.size() - 1)
+            insertQuery += ",";
+    }
+    insertQuery += ");";
+
+    char *errMsg;
+    rc = sqlite3_exec(db, insertQuery.c_str(), nullptr, nullptr, &errMsg);
     if (rc != SQLITE_OK)
     {
-        cout << "Kesalahan dalam mengeksekusi pernyataan: " << sqlite3_errmsg(db) << endl;
+        cout << "Gagal memasukkan data: " << errMsg << endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+
+    return true;
+}
+
+bool readUsers(sqlite3 *db, const string &columns)
+{
+    int rc;
+
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+    users.clear();
+    string selectQuery = "SELECT " + columns + " FROM USER;";
+
+    char *errMsg;
+    rc = sqlite3_exec(db, selectQuery.c_str(), callbackUsers, nullptr, &errMsg);
+    if (rc != SQLITE_OK)
+    {
+        cout << "Gagal membaca data: " << errMsg << endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+
+    return true;
+}
+
+bool readDaftarBarangs(sqlite3 *db, const string &columns)
+{
+    int rc;
+
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+    DaftarBarangs.clear();
+    string selectQuery = "SELECT " + columns + " FROM DAFTARBARANG;";
+
+    char *errMsg;
+    rc = sqlite3_exec(db, selectQuery.c_str(), callbackDaftarBarangs, nullptr, &errMsg);
+    if (rc != SQLITE_OK)
+    {
+        cout << "Gagal membaca data: " << errMsg << endl;
+        sqlite3_free(errMsg);
+        return false;
+    }
+
+    return true;
+}
+
+bool deleteDB(sqlite3 *db, const string &tableName, const string &conditionColumn, const string &conditionValue)
+{
+    int rc;
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+
+    string deleteStatement = "DELETE FROM " + tableName + " WHERE " + conditionColumn + " = '" + conditionValue + "'";
+    cout << deleteStatement << endl;
+    rc = sqlite3_exec(db, deleteStatement.c_str(), nullptr, nullptr, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        cout << "Kesalahan dalam mengeksekusi pernyataan DELETE: " << sqlite3_errmsg(db) << endl;
         return false;
     }
     return true;
@@ -159,41 +244,64 @@ bool insertDB(sqlite3 *db, const string &tableName, const vector<string> &column
 
 bool updateDB(sqlite3 *db, const string &tableName, const string &columnName, const string &columnValue, const string &conditionColumn, const string &conditionValue)
 {
-    string query = "UPDATE " + tableName + " SET " + columnName + "='" + columnValue + "' WHERE " + conditionColumn + "='" + conditionValue + "'";
+    int rc;
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
 
-    int rc = sqlite3_exec(db, query.c_str(), nullptr, nullptr, nullptr);
+    string updateStatement = "UPDATE " + tableName + " SET " + columnName + "='" + columnValue + "' WHERE " + conditionColumn + "='" + conditionValue + "'";
+    rc = sqlite3_exec(db, updateStatement.c_str(), nullptr, nullptr, nullptr);
     if (rc != SQLITE_OK)
     {
-        cout << "Kesalahan dalam mengeksekusi pernyataan: " << sqlite3_errmsg(db) << endl;
+        cout << "Kesalahan dalam mengeksekusi pernyataan UPDATE: " << sqlite3_errmsg(db) << endl;
         return false;
     }
     return true;
 }
 
-bool readDB(sqlite3 *db, const string &tableName, void (*callback)(void *, int, char **, char **))
+bool insertTransaksi(sqlite3 *db, Transaksi &transaksi)
 {
-    string query = "SELECT * FROM " + tableName;
+    int rc;
+    // Membuat file database baru dan tabel
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+    // Memasukkan data transaksi ke dalam tabel "Transaksi"
+    string insertTransaksiQuery = "INSERT INTO Transaksi (TRANSAKSI_ID, WAKTU, HARGA, USER) VALUES (" +
+                                  to_string(transaksi.nomorTransaksi) + ", '" +
+                                  transaksi.waktuTransaksi + "', '" +
+                                  to_string(transaksi.hargaTransaksi) + "', '" +
+                                  transaksi.namaUser + "');";
 
-    int rc = sqlite3_exec(db, query.c_str(), callback, nullptr, nullptr);
+    rc = sqlite3_exec(db, insertTransaksiQuery.c_str(), nullptr, nullptr, nullptr);
     if (rc != SQLITE_OK)
     {
         cout << "Kesalahan dalam mengeksekusi pernyataan: " << sqlite3_errmsg(db) << endl;
         return false;
     }
-    return true;
-}
 
-int main()
-{
-    sqlite3 *db;
-    bool x = checkDB(db);
-    if (x)
+    // Memasukkan data barang ke dalam tabel "Barang"
+    for (const auto &barang : transaksi.daftarBarangTransaksi)
     {
-        cout << "next" << endl;
+        string insertBarangQuery = "INSERT INTO Barang (TRANSAKSI_ID, NAMABARANG, QTY, HARGA) VALUES (" +
+                                   to_string(transaksi.nomorTransaksi) + ", '" +
+                                   barang.nama + "', " +
+                                   to_string(barang.quantitas) + ", " +
+                                   to_string(barang.hargaPerBarang) + ");";
+
+        rc = sqlite3_exec(db, insertBarangQuery.c_str(), nullptr, nullptr, nullptr);
+        if (rc != SQLITE_OK)
+        {
+            cout << "Kesalahan dalam mengeksekusi pernyataan: " << sqlite3_errmsg(db) << endl;
+            return false;
+        }
     }
-    else
-    {
-        cout << "gagal" << endl;
-    }
-    sqlite3_close(db);
+
+    return true;
 }
