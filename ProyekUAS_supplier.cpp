@@ -62,14 +62,15 @@ main(){
     UpdateData(db);
     break;
     default:
-    cout<<endl;
-    cout<<endl;
-    cout<<" Terima kasih telah menjaga ketertiban dalam pengelolaan data gudang DASA "<<endl;
-    cout<<endl;
-    cout<<endl;
     break;
         }
         sqlite3_close(db);
+    cout<<endl;
+    cout<<endl;
+    cout<<" Terima kasih telah menjaga ketertiban dalam pengelolaan data gudang "<<endl;
+    cout<<endl;
+    cout<<endl;
+    system("pause");
     return 0;
     }
 void MasukkanDataBarang(sqlite3 *db){
@@ -124,10 +125,10 @@ bool tampilBarang(sqlite3 *db){
         cout << "-----------------------------------------------------------------------------------------" << endl;
         for (const auto &barang : DaftarBarangs)
         {
-            cout << setiosflags(ios::left) << setw(15) << barang.id;
-            cout << setiosflags(ios::left) << setw(23) << barang.nama;
-            cout << setiosflags(ios::left) << setw(20) << barang.qty;
-            cout << setiosflags(ios::left) << setw(20) << barang.harga;
+            cout << setiosflags(ios::left) << setw(20) << barang.id;
+            cout << setiosflags(ios::left) << setw(25) << barang.nama;
+            cout << setiosflags(ios::left) << setw(22) << barang.qty;
+            cout << setiosflags(ios::left) << setw(22) << barang.harga;
             cout << endl;
         }
         cout << "-----------------------------------------------------------------------------------------" << endl;
