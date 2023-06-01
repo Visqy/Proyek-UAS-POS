@@ -13,6 +13,18 @@ void HapusData(sqlite3 *db);
 bool CariData(sqlite3 *db);
 bool tampilBarang(sqlite3 *db);
 bool tampilSemuaBarang(sqlite3 *db);
+void FixCin()
+{
+    if (cin.fail())
+    {
+        cin.clear();
+        cin.ignore(256, '\n');
+    }
+    else
+    {
+        cin.ignore();
+    }
+};
 
 main(){
     sqlite3 *db;
@@ -67,14 +79,14 @@ main(){
 void MasukkanDataBarang(sqlite3 *db){
     awal:
     system("cls");
-{
     vector<string> barangColumns = {"KODEBARANG", "NAMA_BARANG", "QTY", "HARGA"};
     DaftarBarang newBarang;
     cout << "barang baru" << endl;
     cout << "Masukkan kode barang: ";
     cin >> newBarang.id;
     cout << "Masukkan nama barang: ";
-    cin >> newBarang.nama;
+    FixCin();
+    getline(cin, newBarang.nama);
     cout << "Masukkan stok barang: ";
     cin >> newBarang.qty;
     cout << "Masukkan harga barang: ";
@@ -89,7 +101,6 @@ void MasukkanDataBarang(sqlite3 *db){
     {
         cout << "Gagal menambahkan data barang." << endl;
     }
-}
     system("pause");
     string t;
     cout<<">> ingin menambah data lagi ? "<<endl;
