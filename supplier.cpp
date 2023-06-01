@@ -13,14 +13,6 @@ void HapusData(sqlite3 *db);
 bool CariData(sqlite3 *db);
 bool tampilBarang(sqlite3 *db);
 bool tampilSemuaBarang(sqlite3 *db);
-class gudang{
-public:
-
-int code,banyak,harga,t,nama,barang;
-int getCode(){
-    return code;
-    }
-};
 
 main(){
     sqlite3 *db;
