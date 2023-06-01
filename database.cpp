@@ -58,7 +58,7 @@ static int callbackTransaksi(void *data, int argc, char **argv, char **)
     rowData.daftarBarangTransaksi.push_back(barang);
 
     // Mencari transaksi dengan nomor transaksi yang sama dan menggabungkan daftar barangnya
-    for (auto &transaksi : transaksiList)
+    for (auto &transaksi : TransaksiList)
     {
         if (transaksi.nomorTransaksi == rowData.nomorTransaksi)
         {
@@ -69,7 +69,7 @@ static int callbackTransaksi(void *data, int argc, char **argv, char **)
     }
 
     // Jika tidak ada transaksi dengan nomor transaksi yang sama, tambahkan transaksi baru ke daftar transaksi
-    transaksiList.push_back(rowData);
+    TransaksiList.push_back(rowData);
 
     return 0;
 }
@@ -354,7 +354,7 @@ bool readTransaksi(sqlite3 *db)
     }
     else
     {
-        transaksiList.clear();
+        TransaksiList.clear();
 
         string query = "SELECT TRANSAKSI.TRANSAKSI_ID, TRANSAKSI.WAKTU, TRANSAKSI.HARGA, TRANSAKSI.USER, BARANG.NAMABARANG, BARANG.QTY, BARANG.HARGA "
                        "FROM TRANSAKSI "
