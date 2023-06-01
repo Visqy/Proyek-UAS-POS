@@ -275,6 +275,12 @@ bool deleteDB(sqlite3 *db, const string &tableName, const string &conditionColum
         cout << "Kesalahan dalam mengeksekusi pernyataan DELETE: " << sqlite3_errmsg(db) << endl;
         return false;
     }
+    int rowsAffected = sqlite3_changes(db);
+    if (rowsAffected == 0)
+    {
+        cout << "Data dengan kondisi yang diberikan tidak ditemukan." << endl;
+        return false;
+    }
     return true;
 }
 
@@ -293,6 +299,12 @@ bool updateDB(sqlite3 *db, const string &tableName, const string &columnName, co
     if (rc != SQLITE_OK)
     {
         cout << "Kesalahan dalam mengeksekusi pernyataan UPDATE: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+    int rowsAffected = sqlite3_changes(db);
+    if (rowsAffected == 0)
+    {
+        cout << "Data dengan kondisi yang diberikan tidak ditemukan." << endl;
         return false;
     }
     return true;
