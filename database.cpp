@@ -41,6 +41,39 @@ vector<Transaksi> TransaksiList;
 vector<DaftarBarang> DaftarBarangs;
 vector<User> users;
 
+static int callbackTransaksi(void *data, int argc, char **argv, char **)
+{
+    Transaksi rowData;
+
+    rowData.nomorTransaksi = stoi(argv[0]);
+    rowData.waktuTransaksi = argv[1];
+    rowData.hargaTransaksi = stoi(argv[2]);
+    rowData.namaUser = argv[3];
+
+    // Memasukkan barang ke dalam daftar barang transaksi
+    Barang barang;
+    barang.nama = argv[4];
+    barang.quantitas = stoi(argv[5]);
+    barang.hargaPerBarang = stoi(argv[6]);
+    rowData.daftarBarangTransaksi.push_back(barang);
+
+    // Mencari transaksi dengan nomor transaksi yang sama dan menggabungkan daftar barangnya
+    for (auto &transaksi : transaksiList)
+    {
+        if (transaksi.nomorTransaksi == rowData.nomorTransaksi)
+        {
+            transaksi.hargaTransaksi += rowData.hargaTransaksi;
+            transaksi.daftarBarangTransaksi.push_back(barang);
+            return 0;
+        }
+    }
+
+    // Jika tidak ada transaksi dengan nomor transaksi yang sama, tambahkan transaksi baru ke daftar transaksi
+    transaksiList.push_back(rowData);
+
+    return 0;
+}
+
 static int callbackUsers(void *, int argc, char **argv, char **)
 {
     User rowData;
@@ -206,19 +239,22 @@ bool readDaftarBarangs(sqlite3 *db, const string &columns)
         cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
         return false;
     }
-    DaftarBarangs.clear();
-    string selectQuery = "SELECT " + columns + " FROM DAFTARBARANG;";
-
-    char *errMsg;
-    rc = sqlite3_exec(db, selectQuery.c_str(), callbackDaftarBarangs, nullptr, &errMsg);
-    if (rc != SQLITE_OK)
+    else
     {
-        cout << "Gagal membaca data: " << errMsg << endl;
-        sqlite3_free(errMsg);
-        return false;
-    }
+        DaftarBarangs.clear();
+        string selectQuery = "SELECT " + columns + " FROM DAFTARBARANG;";
 
-    return true;
+        char *errMsg;
+        rc = sqlite3_exec(db, selectQuery.c_str(), callbackDaftarBarangs, nullptr, &errMsg);
+        if (rc != SQLITE_OK)
+        {
+            cout << "Gagal membaca data: " << errMsg << endl;
+            sqlite3_free(errMsg);
+            return false;
+        }
+
+        return true;
+    }
 }
 
 bool deleteDB(sqlite3 *db, const string &tableName, const string &conditionColumn, const string &conditionValue)
@@ -304,4 +340,36 @@ bool insertTransaksi(sqlite3 *db, Transaksi &transaksi)
     }
 
     return true;
+}
+
+bool readTransaksi(sqlite3 *db)
+{
+    int rc;
+    // Membuat file database baru dan tabel
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+    else
+    {
+        transaksiList.clear();
+
+        string query = "SELECT TRANSAKSI.TRANSAKSI_ID, TRANSAKSI.WAKTU, TRANSAKSI.HARGA, TRANSAKSI.USER, BARANG.NAMABARANG, BARANG.QTY, BARANG.HARGA "
+                       "FROM TRANSAKSI "
+                       "INNER JOIN BARANG ON TRANSAKSI.TRANSAKSI_ID = BARANG.TRANSAKSI_ID;";
+
+        char *errMsg;
+        int rc;
+
+        rc = sqlite3_exec(db, query.c_str(), callbackTransaksi, nullptr, &errMsg);
+        if (rc != SQLITE_OK)
+        {
+            cout << "Kesalahan dalam membaca transaksi: " << errMsg << endl;
+            sqlite3_free(errMsg);
+            return false;
+        }
+        return true;
+    }
 }
