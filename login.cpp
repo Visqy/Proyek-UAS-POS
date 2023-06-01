@@ -23,7 +23,7 @@ int main()
     }
 
     string login, password;
-    cout << "Masukkan login: ";
+    cout << "Masukkan id: ";
     cin >> login;
     cout << "Masukkan password: ";
     cin >> password;
@@ -45,8 +45,27 @@ int main()
         cout << "die" << endl;
         return 0;
     }
+    else
+    {
+        switch (type)
+        {
+        case 0:
+            cout << "Masuk sebagai: Admin" << endl;
+            break;
 
-    cout << type << endl;
+        case 1:
+            cout << "Masuk sebagai: Kasir" << endl;
+            break;
+
+        case 2:
+            cout << "Masuk sebagai: Supplier" << endl;
+            break;
+
+        default:
+            cout << "Invalid user type" << endl;
+            return 0;
+        }
+    }
 
     sqlite3_close(db);
     return 0;
