@@ -91,7 +91,8 @@ void deleteUser(sqlite3 *db)
     tampilUser(db);
     string user;
     cout << "pilih user : ";
-    cin >> user;
+    FixCin();
+    getline(cin, user);
     if (deleteDB(db, "USER", "USER", user))
     {
         cout << "Hapus data berhasil." << endl;
@@ -212,7 +213,6 @@ int main()
         cout << "Gagal memeriksa database" << endl;
         return 1;
     }
-
     menuPengaturan(db);
     sqlite3_close(db);
     return 0;
