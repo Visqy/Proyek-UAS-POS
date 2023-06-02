@@ -23,6 +23,7 @@ struct DaftarBarang
 
 struct Barang
 {
+    int kode;
     string nama;
     int quantitas;
     int hargaPerBarang;
@@ -41,6 +42,14 @@ vector<Transaksi> TransaksiList;
 vector<DaftarBarang> DaftarBarangs;
 vector<User> users;
 
+static int selectQtyCallback(void *data, int argc, char **argv, char **colNames)
+{
+    int *qty = static_cast<int *>(data);
+    if (argc > 0 && argv[0])
+        *qty = stoi(argv[0]);
+    return SQLITE_OK;
+}
+
 static int callbackTransaksi(void *data, int argc, char **argv, char **)
 {
     Transaksi rowData;
@@ -52,9 +61,10 @@ static int callbackTransaksi(void *data, int argc, char **argv, char **)
 
     // Memasukkan barang ke dalam daftar barang transaksi
     Barang barang;
-    barang.nama = argv[4];
-    barang.quantitas = stoi(argv[5]);
-    barang.hargaPerBarang = stoi(argv[6]);
+    barang.kode = stoi(argv[4]);
+    barang.nama = argv[5];
+    barang.quantitas = stoi(argv[6]);
+    barang.hargaPerBarang = stoi(argv[7]);
     rowData.daftarBarangTransaksi.push_back(barang);
 
     // Mencari transaksi dengan nomor transaksi yang sama dan menggabungkan daftar barangnya
@@ -140,6 +150,7 @@ bool checkDB(sqlite3 *db)
                                   "CREATE TABLE BARANG ("
                                   "ID INTEGER PRIMARY KEY AUTOINCREMENT, "
                                   "TRANSAKSI_ID INTEGER, "
+                                  "KODEBARANG INTEGER, "
                                   "NAMABARANG TEXT, "
                                   "QTY INTEGER, "
                                   "HARGA INTEGER, "
@@ -321,8 +332,8 @@ bool insertTransaksi(sqlite3 *db, Transaksi &transaksi)
         return false;
     }
     // Memasukkan data transaksi ke dalam tabel "Transaksi"
-    string insertTransaksiQuery = "INSERT INTO Transaksi (TRANSAKSI_ID, WAKTU, HARGA, USER) VALUES (" +
-                                  to_string(transaksi.nomorTransaksi) + ", '" +
+    string insertTransaksiQuery = "INSERT INTO Transaksi (TRANSAKSI_ID, WAKTU, HARGA, USER) VALUES ('" +
+                                  to_string(transaksi.nomorTransaksi) + "', '" +
                                   transaksi.waktuTransaksi + "', '" +
                                   to_string(transaksi.hargaTransaksi) + "', '" +
                                   transaksi.namaUser + "');";
@@ -337,8 +348,9 @@ bool insertTransaksi(sqlite3 *db, Transaksi &transaksi)
     // Memasukkan data barang ke dalam tabel "Barang"
     for (const auto &barang : transaksi.daftarBarangTransaksi)
     {
-        string insertBarangQuery = "INSERT INTO Barang (TRANSAKSI_ID, NAMABARANG, QTY, HARGA) VALUES (" +
-                                   to_string(transaksi.nomorTransaksi) + ", '" +
+        string insertBarangQuery = "INSERT INTO Barang (TRANSAKSI_ID, KODEBARANG, NAMABARANG, QTY, HARGA) VALUES ('" +
+                                   to_string(transaksi.nomorTransaksi) + "', '" +
+                                   to_string(barang.kode) + "', '" +
                                    barang.nama + "', " +
                                    to_string(barang.quantitas) + ", " +
                                    to_string(barang.hargaPerBarang) + ");";
@@ -368,7 +380,7 @@ bool readTransaksi(sqlite3 *db)
     {
         TransaksiList.clear();
 
-        string query = "SELECT TRANSAKSI.TRANSAKSI_ID, TRANSAKSI.WAKTU, TRANSAKSI.HARGA, TRANSAKSI.USER, BARANG.NAMABARANG, BARANG.QTY, BARANG.HARGA "
+        string query = "SELECT TRANSAKSI.TRANSAKSI_ID, TRANSAKSI.WAKTU, TRANSAKSI.HARGA, TRANSAKSI.USER, BARANG.KODEBARANG, BARANG.NAMABARANG, BARANG.QTY, BARANG.HARGA "
                        "FROM TRANSAKSI "
                        "INNER JOIN BARANG ON TRANSAKSI.TRANSAKSI_ID = BARANG.TRANSAKSI_ID;";
 
@@ -384,4 +396,122 @@ bool readTransaksi(sqlite3 *db)
         }
         return true;
     }
+}
+
+bool updateStokBarang(sqlite3 *db, int &qty, int &kodeBarang)
+{
+    int rc;
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+
+    string selectQtyQuery = "SELECT QTY FROM DAFTARBARANG WHERE KODEBARANG='" + to_string(kodeBarang) + "'";
+    int currentQty = 0;
+    rc = sqlite3_exec(db, selectQtyQuery.c_str(), selectQtyCallback, &currentQty, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        cout << "Kesalahan dalam mengeksekusi pernyataan SELECT: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+
+    int newQty = currentQty - qty;
+    string updateQtyStatement = "UPDATE DAFTARBARANG SET QTY='" + to_string(newQty) + "' WHERE KODEBARANG='" + to_string(kodeBarang) + "'";
+    rc = sqlite3_exec(db, updateQtyStatement.c_str(), nullptr, nullptr, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        cout << "Kesalahan dalam mengeksekusi pernyataan UPDATE DAFTARBARANG: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool isBarangExists(sqlite3 *db, const int &kodeBarang)
+{
+    int rc;
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+    string query = "SELECT COUNT(*) FROM DAFTARBARANG WHERE KODEBARANG = '" + to_string(kodeBarang) + "'";
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        cout << "Kesalahan dalam mengeksekusi pernyataan SELECT: " << sqlite3_errmsg(db) << endl;
+        return false;
+    }
+
+    bool exists = false;
+    if (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        int count = sqlite3_column_int(stmt, 0);
+        exists = (count > 0);
+    }
+
+    sqlite3_finalize(stmt);
+    return exists;
+}
+
+string getNamaBarang(sqlite3 *db, const int &kodeBarang)
+{
+    int rc;
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return "";
+    }
+    string query = "SELECT NAMA_BARANG FROM DAFTARBARANG WHERE KODEBARANG = '" + to_string(kodeBarang) + "'";
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        cout << "Kesalahan dalam mengeksekusi pernyataan SELECT: " << sqlite3_errmsg(db) << endl;
+        return "";
+    }
+
+    string namaBarang = "";
+    if (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        const unsigned char *result = sqlite3_column_text(stmt, 0);
+        namaBarang = reinterpret_cast<const char *>(result);
+    }
+
+    sqlite3_finalize(stmt);
+    return namaBarang;
+}
+
+string readBarangTransaksi(sqlite3 *db, const int &kodeBarang, const string &colomn)
+{
+    int rc;
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return "";
+    }
+    string query = "SELECT " + colomn + " FROM DAFTARBARANG WHERE KODEBARANG = '" + to_string(kodeBarang) + "'";
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        cout << "Kesalahan dalam mengeksekusi pernyataan SELECT: " << sqlite3_errmsg(db) << endl;
+        return "";
+    }
+
+    string isiBarang = "";
+    if (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        const unsigned char *result = sqlite3_column_text(stmt, 0);
+        isiBarang = reinterpret_cast<const char *>(result);
+    }
+
+    sqlite3_finalize(stmt);
+    return isiBarang;
 }

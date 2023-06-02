@@ -6,24 +6,21 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
-#include "database.cpp"
+#include "supplier.cpp"
 
 using namespace std;
 
-void tambahTransaksi(vector<Transaksi>& transaksiList, sqlite3* db)
+void tambahTransaksi(vector<Transaksi> &transaksiList, sqlite3 *db, string &userSekarang)
 {
     char jawaban = 'y';
 
     while (jawaban == 'y' || jawaban == 'Y')
     {
         Transaksi transaksi;
-
-        cout << "Masukkan nama pengguna: ";
-        cin >> transaksi.namaUser;
-
+        transaksi.namaUser = userSekarang;
         // Mendapatkan waktu saat ini
         time_t now = time(0);
-        struct tm* timeInfo = localtime(&now);
+        struct tm *timeInfo = localtime(&now);
 
         stringstream ss;
         ss << put_time(timeInfo, "%Y-%m-%d %H:%M:%S");
@@ -37,12 +34,26 @@ void tambahTransaksi(vector<Transaksi>& transaksiList, sqlite3* db)
         while (tambahBarangJawaban == 'y' || tambahBarangJawaban == 'Y')
         {
             Barang barang;
-            cout << "Masukkan nama barang: ";
-            cin >> barang.nama;
+            cout << "Daftar barang" << endl;
+            tampilBarang(db);
+            bool cekbarang = false;
+            do
+            {
+                cout << "Masukkan kode barang: ";
+                cin >> barang.kode;
+                if (!isBarangExists(db, barang.kode))
+                {
+                    cout << "Barang dengan kode " << barang.kode << " tidak ada di daftar barang!" << endl;
+                    cekbarang = true;
+                }
+            } while (cekbarang);
+            barang.nama = readBarangTransaksi(db, barang.kode, "NAMA_BARANG");
+            barang.hargaPerBarang = stoi(readBarangTransaksi(db, barang.kode, "HARGA"));
+            cout << "Barang yang dipilih: " << barang.nama << endl;
+            cout << "Harga dari barang yang dipilih: " << barang.hargaPerBarang << endl;
             cout << "Masukkan quantitas barang: ";
             cin >> barang.quantitas;
-            cout << "Masukkan harga per barang: ";
-            cin >> barang.hargaPerBarang;
+            updateStokBarang(db, barang.quantitas, barang.kode);
             harga += barang.hargaPerBarang * barang.quantitas;
             transaksi.daftarBarangTransaksi.push_back(barang);
 
@@ -67,9 +78,9 @@ void tambahTransaksi(vector<Transaksi>& transaksiList, sqlite3* db)
     }
 }
 
-void printReceipt(const vector<Transaksi>& transaksiList)
+void printReceipt(const vector<Transaksi> &transaksiList)
 {
-    for (const Transaksi& transaksi : transaksiList)
+    for (const Transaksi &transaksi : transaksiList)
     {
         cout << "======================================" << endl;
         cout << "            STRUK BELANJA             " << endl;
@@ -82,7 +93,7 @@ void printReceipt(const vector<Transaksi>& transaksiList)
 
         double total = 0.0;
         int count = 1;
-        for (const Barang& barang : transaksi.daftarBarangTransaksi)
+        for (const Barang &barang : transaksi.daftarBarangTransaksi)
         {
             double itemTotal = barang.quantitas * barang.hargaPerBarang;
             total += itemTotal;
@@ -99,14 +110,14 @@ void printReceipt(const vector<Transaksi>& transaksiList)
 
 int main()
 {
-    sqlite3* db;
+    sqlite3 *db;
     if (!checkDB(db))
     {
         cout << "Gagal memeriksa database" << endl;
         return 1;
     }
-
-    tambahTransaksi(TransaksiList, db);
+    string userSekarang = "Kasir";
+    tambahTransaksi(TransaksiList, db, userSekarang);
     printReceipt(TransaksiList);
 
     sqlite3_close(db);
