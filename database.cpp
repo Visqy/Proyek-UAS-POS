@@ -38,9 +38,29 @@ struct Transaksi
     string namaUser;
 };
 
+struct InformasiToko
+{
+    string nama;
+    string alamat;
+    string telp;
+};
+
 vector<Transaksi> TransaksiList;
 vector<DaftarBarang> DaftarBarangs;
 vector<User> users;
+
+void FixCin()
+{
+    if (cin.fail())
+    {
+        cin.clear();
+        cin.ignore(256, '\n');
+    }
+    else
+    {
+        cin.ignore();
+    }
+};
 
 static int selectQtyCallback(void *data, int argc, char **argv, char **colNames)
 {
@@ -118,7 +138,6 @@ bool checkDB(sqlite3 *db)
     // Memeriksa apakah file database sudah ada
     if (filesystem::exists("database.db"))
     {
-        cout << "Database sudah dibuat" << endl;
         return true;
     }
     else
@@ -154,7 +173,11 @@ bool checkDB(sqlite3 *db)
                                   "NAMABARANG TEXT, "
                                   "QTY INTEGER, "
                                   "HARGA INTEGER, "
-                                  "FOREIGN KEY (TRANSAKSI_ID) REFERENCES Transaksi(TRANSAKSI_ID));";
+                                  "FOREIGN KEY (TRANSAKSI_ID) REFERENCES Transaksi(TRANSAKSI_ID));"
+                                  "CREATE TABLE IF NOT EXISTS INFORMASI ("
+                                  "NAMATOKO          TEXT     NOT NULL,"
+                                  "ALAMATTOKO         TEXT     NOT NULL,"
+                                  "TELPTOKO          TEXT     NOT NULL);";
 
         rc = sqlite3_exec(db, createTableQuery.c_str(), nullptr, nullptr, &errMsg);
         if (rc != SQLITE_OK)
@@ -163,8 +186,6 @@ bool checkDB(sqlite3 *db)
             sqlite3_free(errMsg);
             return false;
         }
-
-        cout << "Database berhasil dibuat" << endl;
         return true;
     }
 }
@@ -514,4 +535,112 @@ string readBarangTransaksi(sqlite3 *db, const int &kodeBarang, const string &col
 
     sqlite3_finalize(stmt);
     return isiBarang;
+}
+
+void insertInformasi(sqlite3 *db, const InformasiToko &informasi)
+{
+    int rc;
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+
+    string query = "INSERT INTO INFORMASI (NAMATOKO, ALAMATTOKO, TELPTOKO) VALUES (?, ?, ?);";
+
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Tidak dapat mempersiapkan statement: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+
+    sqlite3_bind_text(stmt, 1, informasi.nama.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, informasi.alamat.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, informasi.telp.c_str(), -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        cerr << "Tidak dapat mengeksekusi statement: " << sqlite3_errmsg(db) << endl;
+        sqlite3_finalize(stmt);
+        return;
+    }
+
+    sqlite3_finalize(stmt);
+    cout << "Informasi toko berhasil ditambahkan ke database." << endl;
+}
+
+InformasiToko readInformasi(sqlite3 *db)
+{
+    int rc;
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return InformasiToko();
+    }
+    string query = "SELECT NAMATOKO, ALAMATTOKO, TELPTOKO FROM INFORMASI;";
+
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Tidak dapat mempersiapkan statement: " << sqlite3_errmsg(db) << endl;
+        return InformasiToko();
+    }
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_ROW)
+    {
+        cerr << "Tidak dapat mengeksekusi statement: " << sqlite3_errmsg(db) << endl;
+        sqlite3_finalize(stmt);
+        return InformasiToko();
+    }
+
+    InformasiToko informasi;
+    informasi.nama = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
+    informasi.alamat = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
+    informasi.telp = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2));
+
+    sqlite3_finalize(stmt);
+
+    return informasi;
+}
+
+void updateInformasi(sqlite3 *db, const InformasiToko &informasi)
+{
+    int rc;
+    rc = sqlite3_open("database.db", &db);
+    if (rc)
+    {
+        cout << "Tidak dapat membuka database: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+    string query = "UPDATE INFORMASI SET NAMATOKO = ?, ALAMATTOKO = ?, TELPTOKO = ?;";
+
+    sqlite3_stmt *stmt;
+    rc = sqlite3_prepare_v2(db, query.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        cerr << "Tidak dapat mempersiapkan statement: " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+
+    sqlite3_bind_text(stmt, 1, informasi.nama.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, informasi.alamat.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, informasi.telp.c_str(), -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+    {
+        cerr << "Tidak dapat mengeksekusi statement: " << sqlite3_errmsg(db) << endl;
+        sqlite3_finalize(stmt);
+        return;
+    }
+
+    sqlite3_finalize(stmt);
+    cout << "Informasi toko berhasil diperbarui." << endl;
 }
