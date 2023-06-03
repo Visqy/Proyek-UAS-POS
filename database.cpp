@@ -130,6 +130,8 @@ static int callbackDaftarBarangs(void *, int argc, char **argv, char **)
     return 0;
 }
 
+void insertInformasi(sqlite3 *db, const InformasiToko &informasi);
+
 bool checkDB(sqlite3 *db)
 {
     int rc;
@@ -186,6 +188,12 @@ bool checkDB(sqlite3 *db)
             sqlite3_free(errMsg);
             return false;
         }
+        // inisiasi awal header table
+        InformasiToko InfoToko;
+        InfoToko.nama = "CONTOH NAMA TOKO";
+        InfoToko.alamat = "LOKASI TOKO";
+        InfoToko.telp = "NO TELP TOKO";
+        insertInformasi(db, InfoToko);
         return true;
     }
 }
