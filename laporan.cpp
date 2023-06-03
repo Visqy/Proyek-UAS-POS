@@ -4,7 +4,6 @@
 #include <vector>
 #include <filesystem>
 #include <sqlite3.h>
-#include "database.cpp"
 
 using namespace std;
 
@@ -17,34 +16,40 @@ bool tampilTransaksi(sqlite3 *db)
     }
     else
     {
-        cout << "-----------------------------------------------------------------------------------------" << endl;
+        cout << "===================================================================================================" << endl;
+        centerText("RIWAYAT TRANSAKSI");
+        cout << "===================================================================================================" << endl;
         cout << "Kode Transaksi        Waktu Transaksi            Harga Total            User            " << endl;
-        cout << "-----------------------------------------------------------------------------------------" << endl;
+        cout << "===================================================================================================" << endl;
         for (const auto &transaksi : TransaksiList)
         {
-            cout << setiosflags(ios::left) << setw(15) << transaksi.nomorTransaksi;
-            cout << setiosflags(ios::left) << setw(23) << transaksi.waktuTransaksi;
-            cout << setiosflags(ios::left) << setw(20) << transaksi.hargaTransaksi;
+            cout << setiosflags(ios::left) << setw(22) << transaksi.nomorTransaksi;
+            cout << setiosflags(ios::left) << setw(27) << transaksi.waktuTransaksi;
+            cout << setiosflags(ios::left) << setw(23) << transaksi.hargaTransaksi;
             cout << setiosflags(ios::left) << setw(20) << transaksi.namaUser;
             cout << endl;
         }
-        cout << "----------------------------------------------------------------------------------------" << endl;
+        cout << "===================================================================================================" << endl;
         return true;
     }
 }
 
-void printReceipt(const Transaksi &transaksi)
+void printReceipt(sqlite3 *db, const Transaksi &transaksi)
 {
-    cout << "======================================" << endl;
-    cout << "            STRUK BELANJA             " << endl;
-    cout << "======================================" << endl;
+    InformasiToko infoToko = readInformasi(db);
+    cout << "===================================================================================================" << endl;
+    centerText("STRUK TRANSAKSI");
+    centerText(infoToko.nama);
+    centerText("Alamat: " + infoToko.alamat);
+    centerText("Telp: " + infoToko.telp);
+    cout << "===================================================================================================" << endl;
     cout << "Nomor Transaksi: " << transaksi.nomorTransaksi << endl;
     cout << "Waktu Transaksi: " << transaksi.waktuTransaksi << endl;
-    cout << "Nama Pengguna: " << transaksi.namaUser << endl;
+    cout << "Nama Kasir: " << transaksi.namaUser << endl;
     cout << "Daftar Barang:" << endl;
-    cout << "-------------------------------------------------------------------------------"<<endl;
-    cout << left << setw(5) << "No" << setw(15) << "NAMA BARANG" << setw(10) << "JUMLAH" << setw(15) << "HARGA PER ITEM" << setw(15) << "TOTAL HARGA" << endl;
-    cout << "-------------------------------------------------------------------------------"<<endl;
+    cout << "---------------------------------------------------------------------------------------------------" << endl;
+    cout << left << setw(5) << "No" << setw(15) << "NAMA BARANG" << setw(10) << "JUMLAH" << setw(20) << "HARGA PER ITEM" << setw(20) << "TOTAL HARGA" << endl;
+    cout << "---------------------------------------------------------------------------------------------------" << endl;
 
     double total = 0.0;
     int count = 1;
@@ -53,25 +58,27 @@ void printReceipt(const Transaksi &transaksi)
         double itemTotal = barang.quantitas * barang.hargaPerBarang;
         total += itemTotal;
 
-        cout << left << setw(5) << count << setw(15) << barang.nama << setw(10) << barang.quantitas << setw(15) << barang.hargaPerBarang << setw(15) << itemTotal << endl;
+        cout << left << setw(5) << count << setw(15) << barang.nama << setw(10) << barang.quantitas << setw(20) << barang.hargaPerBarang << setw(15) << itemTotal << endl;
         count++;
     }
 
-    cout << "==============================================================================" << endl;
+    cout << "===================================================================================================" << endl;
     cout << "TOTAL: " << total << endl;
-    cout << "==============================================================================" << endl;
+    cout << "===================================================================================================" << endl;
 }
 
 void printStruk(sqlite3 *db)
 {
-    cout << "Transaksi Belanja" << endl;
-    cout << "================" << endl;
+    cout << "==============================================================================" << endl;
+    cout << "RIWAYAT STRUK TRANSAKSI" << endl;
+    cout << "==============================================================================" << endl;
 
     int kodeStruk;
     do
     {
         cout << "Masukkan kode struk (0 untuk kembali): ";
         cin >> kodeStruk;
+        FixCin();
 
         if (kodeStruk == 0)
         {
@@ -89,7 +96,7 @@ void printStruk(sqlite3 *db)
             {
                 if (transaksi.nomorTransaksi == kodeStruk)
                 {
-                    printReceipt(transaksi);
+                    printReceipt(db, transaksi);
                     ditemukan = true;
                     break;
                 }
@@ -103,31 +110,31 @@ void printStruk(sqlite3 *db)
     } while (true);
 }
 
-int main()
+void menuLaporan(sqlite3 *db, int &type, string &userSekarang)
 {
-    sqlite3 *db;
-    if (!checkDB(db))
-    {
-        cout << "Gagal memeriksa database" << endl;
-        return 1;
-    }
-
     int menu;
+    bool menuState = true;
     do
     {
-        cout << "========================================" << endl;
-        cout << "         CETAK LAPORAN BELANJA" << endl;
-        cout << "========================================" << endl;
+        headerProgram(db, type, userSekarang);
+        cout << "======================================================" << endl;
+        cout << "MENU LAPORAN TRANSAKSI" << endl;
+        cout << "======================================================" << endl;
         cout << "1. Cetak keseluruhan" << endl;
         cout << "2. Cetak Struk" << endl;
-        cout << "0. Keluar" << endl;
+        cout << "3. Kembali" << endl;
+        cout << "4. Log Out" << endl;
+        cout << "5. Keluar Program" << endl;
+        cout << "======================================================" << endl;
         cout << "Masukkan menu: ";
         cin >> menu;
+        FixCin();
 
         switch (menu)
         {
         case 1:
             system("CLS");
+            headerProgram(db, type, userSekarang);
             tampilTransaksi(db);
             system("PAUSE");
             system("CLS");
@@ -139,15 +146,24 @@ int main()
             system("PAUSE");
             system("CLS");
             break;
-        case 0:
+        case 3:
+            menuState = false;
             system("CLS");
             break;
+        case 4:
+            menuState = false;
+            system("CLS");
+            menuUser(db, type, userSekarang);
+            break;
+        case 5:
+            menuState = false;
+            system("CLS");
+            cout << "Terimakasih sudah menggunakan aplikasi ini." << endl;
+            system("PAUSE");
+            exit(0);
         default:
             cout << "Angka yang dimasukan salah" << endl;
             break;
         }
-    } while (menu != 0);
-
-    sqlite3_close(db);
-    return 0;
+    } while (menuState);
 }
