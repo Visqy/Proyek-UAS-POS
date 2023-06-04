@@ -27,12 +27,14 @@ void tambahTransaksi(sqlite3 *db, int &type, string &userSekarang)
 
     int harga = 0;
     char tambahBarangJawaban = 'y';
+    bool cekbarang = false;
     while (tambahBarangJawaban == 'y' || tambahBarangJawaban == 'Y')
     {
         Barang barang;
         cout << "Daftar barang" << endl;
         tampilBarang(db, type, userSekarang);
-        bool cekbarang = false;
+        cekbarang = false;
+
         do
         {
             cout << "Masukkan kode barang: ";
@@ -40,10 +42,27 @@ void tambahTransaksi(sqlite3 *db, int &type, string &userSekarang)
             FixCin();
             if (!isBarangExists(db, barang.kode))
             {
-                cout << "Barang dengan kode " << barang.kode << " tidak ada di daftar barang!" << endl;
+            cout << "Barang dengan kode " << barang.kode << " tidak ada di daftar barang!" << endl;
+            cout << "Ulangi Transaksi?(y/n): ";
+            cin >> tambahBarangJawaban;
+
+                if (tambahBarangJawaban != 'y' && tambahBarangJawaban != 'Y')
+                {
+                    cekbarang = true;
+                }
+            }
+            else
+            {
                 cekbarang = true;
             }
-        } while (cekbarang);
+        }
+        while (!cekbarang);
+
+        if(!cekbarang)
+        {
+            continue;
+        }
+
         barang.nama = readBarangTransaksi(db, barang.kode, "NAMA_BARANG");
         barang.hargaPerBarang = stoi(readBarangTransaksi(db, barang.kode, "HARGA"));
         cout << "Barang yang dipilih: " << barang.nama << endl;
@@ -57,22 +76,21 @@ void tambahTransaksi(sqlite3 *db, int &type, string &userSekarang)
 
         cout << "Tambah barang lagi? (y/n): ";
         cin >> tambahBarangJawaban;
-    }
-
+}
     transaksi.hargaTransaksi = harga;
     // Memasukkan transaksi ke database
     if (insertTransaksi(db, transaksi))
     {
         TransaksiList.push_back(transaksi);
         cout << "Transaksi berhasil ditambahkan!" << endl;
-        system("PAUSE");
-        system("CLS");
-        printReceipt(db, transaksi);
     }
     else
     {
         cout << "Gagal menambahkan transaksi." << endl;
     }
+    system("PAUSE");
+    system("CLS");
+    printReceipt(db, transaksi);
 }
 
 bool menuTransaksi(sqlite3 *db, int &type, string &userSekarang)
