@@ -26,6 +26,7 @@
 *.sql
 *.sqlite
 *.db
+*.json
 
 # OS generated files #
 ######################

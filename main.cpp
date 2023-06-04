@@ -7,6 +7,7 @@
 #include <chrono>     //untuk mengubah format waktu
 #include <ctime>      //untuk mendapatkan waktu sekarang
 #include <iomanip>    //untuk penggunaan setw()
+#include <Windows.h>
 #include "database.cpp"
 #include "login.cpp"
 #include "supplier.cpp"
@@ -26,11 +27,13 @@ int main()
     // login screen
     string userSekarang;
     int typeUser;
+    loadingScreen();
     if (!menuUser(db, typeUser, userSekarang))
     {
         cout << "Terjadi Kesalahan pada menu login" << endl;
         return 1;
     }
+    loadingScreen();
     // main menu
     mainMenu(db, typeUser, userSekarang);
 }

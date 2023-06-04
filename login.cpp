@@ -51,6 +51,29 @@ void headerProgram(sqlite3 *db, int &type, string userSekarang)
     cout << endl;
 }
 
+void loadingScreen()
+{
+    system("cls");
+    cout << "\e[?25l";
+    cout << "\n\n\n\n\n\n";
+    cout << "\t\t\t\t______     _       _            __   _____       _      " << endl;
+    cout << "\t\t\t\t| ___ \\   (_)     | |          / _| /  ___|     | |     " << endl;
+    cout << "\t\t\t\t| |_/ /__  _ _ __ | |_    ___ | |_  \\ `--.  __ _| | ___ " << endl;
+    cout << "\t\t\t\t|  __/ _ \\| | '_ \\| __|  / _ \\|  _|  `--. \\/ _` | |/ _ \\" << endl;
+    cout << "\t\t\t\t| | | (_) | | | | | |_  | (_) | |   /\\__/ / (_| | |  __/" << endl;
+    cout << "\t\t\t\t\\_|  \\___/|_|_| |_|\\__|  \\___/|_|   \\____/ \\__,_|_|\\___|" << endl;
+    cout << "\n\n\n\t\t\t\t   ";
+
+    for (int i = 0; i < 50; i++)
+    {
+        cout << (char)219;
+        Sleep(50);
+    }
+    cout << "\n\n\n\n\n\n";
+    cout << "\033[?25h";
+    system("cls");
+}
+
 string GetPassword()
 {
     string password;
