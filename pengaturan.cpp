@@ -258,7 +258,7 @@ void menuPengaturan(sqlite3 *db, int &type, string &userSekarang)
         case 4:
             menuState = false;
             system("CLS");
-            menuUser(db, type, userSekarang);
+            main();
             break;
         case 5:
             menuState = false;
