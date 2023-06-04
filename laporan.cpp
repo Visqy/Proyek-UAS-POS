@@ -69,13 +69,14 @@ void printReceipt(sqlite3 *db, const Transaksi &transaksi)
 
 void printStruk(sqlite3 *db)
 {
-    cout << "==============================================================================" << endl;
-    cout << "RIWAYAT STRUK TRANSAKSI" << endl;
-    cout << "==============================================================================" << endl;
-
     int kodeStruk;
     do
     {
+        tampilTransaksi(db);
+        cout << endl;
+        cout << "==============================================================================" << endl;
+        cout << "RIWAYAT STRUK TRANSAKSI" << endl;
+        cout << "==============================================================================" << endl;
         cout << "Masukkan kode struk (0 untuk kembali): ";
         cin >> kodeStruk;
         FixCin();
@@ -96,8 +97,11 @@ void printStruk(sqlite3 *db)
             {
                 if (transaksi.nomorTransaksi == kodeStruk)
                 {
+                    system("cls");
                     printReceipt(db, transaksi);
                     ditemukan = true;
+                    system("pause");
+                    system("CLS");
                     break;
                 }
             }
@@ -141,7 +145,6 @@ void menuLaporan(sqlite3 *db, int &type, string &userSekarang)
             break;
         case 2:
             system("CLS");
-            tampilTransaksi(db);
             printStruk(db);
             system("PAUSE");
             system("CLS");

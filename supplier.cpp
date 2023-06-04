@@ -289,4 +289,5 @@ bool menuBarang(sqlite3 *db, int &type, string &userSekarang)
             break;
         }
     } while (menuState);
+    return true;
 }

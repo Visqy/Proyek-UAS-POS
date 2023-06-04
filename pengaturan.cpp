@@ -245,7 +245,6 @@ void menuPengaturan(sqlite3 *db, int &type, string &userSekarang)
         case 1:
             system("CLS");
             manageHeader(db, type, userSekarang);
-            system("PAUSE");
             system("CLS");
             break;
         case 2:

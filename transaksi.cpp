@@ -65,14 +65,14 @@ void tambahTransaksi(sqlite3 *db, int &type, string &userSekarang)
     {
         TransaksiList.push_back(transaksi);
         cout << "Transaksi berhasil ditambahkan!" << endl;
+        system("PAUSE");
+        system("CLS");
+        printReceipt(db, transaksi);
     }
     else
     {
         cout << "Gagal menambahkan transaksi." << endl;
     }
-    system("PAUSE");
-    system("CLS");
-    printReceipt(db, transaksi);
 }
 
 bool menuTransaksi(sqlite3 *db, int &type, string &userSekarang)
