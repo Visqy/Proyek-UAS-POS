@@ -6,121 +6,122 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
-#include "supplier.cpp"
 
 using namespace std;
 
-void tambahTransaksi(vector<Transaksi> &transaksiList, sqlite3 *db, string &userSekarang)
+void tambahTransaksi(sqlite3 *db, int &type, string &userSekarang)
 {
-    char jawaban = 'y';
+    Transaksi transaksi;
+    transaksi.namaUser = userSekarang;
+    // Mendapatkan waktu saat ini
+    time_t now = time(0);
+    struct tm *timeInfo = localtime(&now);
 
-    while (jawaban == 'y' || jawaban == 'Y')
+    stringstream ss;
+    ss << put_time(timeInfo, "%Y-%m-%d %H:%M:%S");
+    transaksi.waktuTransaksi = ss.str();
+
+    cout << "Masukkan nomor transaksi : ";
+    cin >> transaksi.nomorTransaksi;
+    FixCin();
+
+    int harga = 0;
+    char tambahBarangJawaban = 'y';
+    while (tambahBarangJawaban == 'y' || tambahBarangJawaban == 'Y')
     {
-        Transaksi transaksi;
-        transaksi.namaUser = userSekarang;
-        // Mendapatkan waktu saat ini
-        time_t now = time(0);
-        struct tm *timeInfo = localtime(&now);
-
-        stringstream ss;
-        ss << put_time(timeInfo, "%Y-%m-%d %H:%M:%S");
-        transaksi.waktuTransaksi = ss.str();
-
-        cout << "Masukkan nomor transaksi : ";
-        cin >> transaksi.nomorTransaksi;
-
-        int harga = 0;
-        char tambahBarangJawaban = 'y';
-        while (tambahBarangJawaban == 'y' || tambahBarangJawaban == 'Y')
+        Barang barang;
+        cout << "Daftar barang" << endl;
+        tampilBarang(db, type, userSekarang);
+        bool cekbarang = false;
+        do
         {
-            Barang barang;
-            cout << "Daftar barang" << endl;
-            tampilBarang(db);
-            bool cekbarang = false;
-            do
+            cout << "Masukkan kode barang: ";
+            cin >> barang.kode;
+            FixCin();
+            if (!isBarangExists(db, barang.kode))
             {
-                cout << "Masukkan kode barang: ";
-                cin >> barang.kode;
-                if (!isBarangExists(db, barang.kode))
-                {
-                    cout << "Barang dengan kode " << barang.kode << " tidak ada di daftar barang!" << endl;
-                    cekbarang = true;
-                }
-            } while (cekbarang);
-            barang.nama = readBarangTransaksi(db, barang.kode, "NAMA_BARANG");
-            barang.hargaPerBarang = stoi(readBarangTransaksi(db, barang.kode, "HARGA"));
-            cout << "Barang yang dipilih: " << barang.nama << endl;
-            cout << "Harga dari barang yang dipilih: " << barang.hargaPerBarang << endl;
-            cout << "Masukkan quantitas barang: ";
-            cin >> barang.quantitas;
-            updateStokBarang(db, barang.quantitas, barang.kode);
-            harga += barang.hargaPerBarang * barang.quantitas;
-            transaksi.daftarBarangTransaksi.push_back(barang);
+                cout << "Barang dengan kode " << barang.kode << " tidak ada di daftar barang!" << endl;
+                cekbarang = true;
+            }
+        } while (cekbarang);
+        barang.nama = readBarangTransaksi(db, barang.kode, "NAMA_BARANG");
+        barang.hargaPerBarang = stoi(readBarangTransaksi(db, barang.kode, "HARGA"));
+        cout << "Barang yang dipilih: " << barang.nama << endl;
+        cout << "Harga dari barang yang dipilih: " << barang.hargaPerBarang << endl;
+        cout << "Masukkan quantitas barang: ";
+        cin >> barang.quantitas;
+        FixCin();
+        updateStokBarang(db, barang.quantitas, barang.kode);
+        harga += barang.hargaPerBarang * barang.quantitas;
+        transaksi.daftarBarangTransaksi.push_back(barang);
 
-            cout << "Tambah barang lagi? (y/n): ";
-            cin >> tambahBarangJawaban;
-        }
-
-        transaksi.hargaTransaksi = harga;
-        // Memasukkan transaksi ke database
-        if (insertTransaksi(db, transaksi))
-        {
-            transaksiList.push_back(transaksi);
-            cout << "Transaksi berhasil ditambahkan!" << endl;
-        }
-        else
-        {
-            cout << "Gagal menambahkan transaksi." << endl;
-        }
-
-        cout << "Tambah transaksi lagi? (y/n): ";
-        cin >> jawaban;
+        cout << "Tambah barang lagi? (y/n): ";
+        cin >> tambahBarangJawaban;
     }
+
+    transaksi.hargaTransaksi = harga;
+    // Memasukkan transaksi ke database
+    if (insertTransaksi(db, transaksi))
+    {
+        TransaksiList.push_back(transaksi);
+        cout << "Transaksi berhasil ditambahkan!" << endl;
+    }
+    else
+    {
+        cout << "Gagal menambahkan transaksi." << endl;
+    }
+    system("PAUSE");
+    system("CLS");
+    printReceipt(db, transaksi);
 }
 
-void printReceipt(const vector<Transaksi> &transaksiList)
+bool menuTransaksi(sqlite3 *db, int &type, string &userSekarang)
 {
-    for (const Transaksi &transaksi : transaksiList)
+    int menu;
+    bool menuState = true;
+    do
     {
-        cout << "======================================" << endl;
-        cout << "            STRUK BELANJA             " << endl;
-        cout << "======================================" << endl;
-        cout << "Nomor Transaksi: " << transaksi.nomorTransaksi << endl;
-        cout << "Waktu Transaksi: " << transaksi.waktuTransaksi << endl;
-        cout << "Nama Pengguna: " << transaksi.namaUser << endl;
-        cout << "Daftar Barang:" << endl;
-        cout << left << setw(5) << "No" << setw(15) << "NAMA BARANG" << setw(10) << "JUMLAH" << setw(15) << "HARGA PER ITEM" << setw(15) << "TOTAL HARGA" << endl;
+        headerProgram(db, type, userSekarang);
+        cout << "======================================================" << endl;
+        cout << "MENU TRANSAKSI" << endl;
+        cout << "======================================================" << endl;
+        cout << "1. Tambah Transaksi" << endl;
+        cout << "2. Kembali" << endl;
+        cout << "3. Log Out" << endl;
+        cout << "4. Keluar Program" << endl;
+        cout << "======================================================" << endl;
+        cout << "Masukkan menu: ";
+        cin >> menu;
+        FixCin();
 
-        double total = 0.0;
-        int count = 1;
-        for (const Barang &barang : transaksi.daftarBarangTransaksi)
+        switch (menu)
         {
-            double itemTotal = barang.quantitas * barang.hargaPerBarang;
-            total += itemTotal;
-
-            cout << left << setw(5) << count << setw(15) << barang.nama << setw(10) << barang.quantitas << setw(15) << barang.hargaPerBarang << setw(15) << itemTotal << endl;
-            count++;
+        case 1:
+            system("CLS");
+            headerProgram(db, type, userSekarang);
+            tambahTransaksi(db, type, userSekarang);
+            system("PAUSE");
+            system("CLS");
+            break;
+        case 2:
+            menuState = false;
+            system("CLS");
+            break;
+        case 3:
+            menuState = false;
+            system("CLS");
+            return false;
+            break;
+        case 4:
+            menuState = false;
+            system("CLS");
+            cout << "Terimakasih sudah menggunakan aplikasi ini." << endl;
+            system("PAUSE");
+            exit(0);
+        default:
+            cout << "Angka yang dimasukan salah" << endl;
+            break;
         }
-
-        cout << "======================================" << endl;
-        cout << "TOTAL: " << total << endl;
-        cout << "======================================" << endl;
-    }
-}
-
-int main()
-{
-    sqlite3 *db;
-    if (!checkDB(db))
-    {
-        cout << "Gagal memeriksa database" << endl;
-        return 1;
-    }
-    string userSekarang = "Kasir";
-    tambahTransaksi(TransaksiList, db, userSekarang);
-    printReceipt(TransaksiList);
-
-    sqlite3_close(db);
-
-    return 0;
+    } while (menuState);
+    return true;
 }
