@@ -308,7 +308,6 @@ bool deleteDB(sqlite3 *db, const string &tableName, const string &conditionColum
     }
 
     string deleteStatement = "DELETE FROM " + tableName + " WHERE " + conditionColumn + " = '" + conditionValue + "'";
-    cout << deleteStatement << endl;
     rc = sqlite3_exec(db, deleteStatement.c_str(), nullptr, nullptr, nullptr);
     if (rc != SQLITE_OK)
     {
