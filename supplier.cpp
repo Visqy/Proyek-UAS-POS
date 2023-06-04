@@ -3,67 +3,10 @@
 #include <string>
 #include <vector>
 #include <sqlite3.h>
-#include "database.cpp"
 
 using namespace std;
 
-void MasukkanDataBarang(sqlite3 *db);
-void UpdateData(sqlite3 *db);
-void HapusData(sqlite3 *db);
-bool CariData(sqlite3 *db);
-bool tampilBarang(sqlite3 *db);
-bool tampilSemuaBarang(sqlite3 *db);
-
-void menuBarang(sqlite3 *db)
-{
-    if (!checkDB(db))
-    {
-        cout << "Gagal memeriksa database" << endl;
-    }
-    char menu;
-    cout << "======================================================" << endl;
-    cout << " =============== Data Supplier Barang ================" << endl;
-    cout << "======================================================" << endl;
-    cout << " a].Masukkan data barang                " << endl;
-    cout << " b].Cari Data                           " << endl;
-    cout << " c].Data barang gudang keseluruhan      " << endl;
-    cout << " d].Hapus data gudang                   " << endl;
-    cout << " e].Edit data                           " << endl;
-    cout << " x].close                               " << endl;
-    cout << "======================================================" << endl;
-    cout << "======================================================" << endl;
-    cout << " PILIH MENU:";
-    cin >> menu;
-    system("cls");
-    switch (menu)
-    {
-    case 'a':
-        MasukkanDataBarang(db);
-        break;
-    case 'b':
-        CariData(db);
-        break;
-    case 'c':
-        tampilSemuaBarang(db);
-        break;
-    case 'd':
-        HapusData(db);
-        break;
-    case 'e':
-        UpdateData(db);
-        break;
-    default:
-        cout << endl;
-        cout << endl;
-        cout << " Terima kasih telah menjaga ketertiban dalam pengelolaan data gudang " << endl;
-        cout << endl;
-        cout << endl;
-        system("pause");
-        break;
-    }
-}
-
-void MasukkanDataBarang(sqlite3 *db)
+void MasukkanDataBarang(sqlite3 *db, int &type, string &userSekarang)
 {
 awal:
     system("cls");
@@ -73,12 +16,16 @@ awal:
         cout << "barang baru" << endl;
         cout << "Masukkan kode barang: ";
         cin >> newBarang.id;
+        FixCin();
         cout << "Masukkan nama barang: ";
-        cin >> newBarang.nama;
+        cin.ignore();
+        getline(cin, newBarang.nama);
         cout << "Masukkan stok barang: ";
         cin >> newBarang.qty;
+        FixCin();
         cout << "Masukkan harga barang: ";
         cin >> newBarang.harga;
+        FixCin();
         vector<string> barangValues = {to_string(newBarang.id), newBarang.nama, to_string(newBarang.qty), to_string(newBarang.harga)};
         if (insertDB(db, "DAFTARBARANG", barangColumns, barangValues))
         {
@@ -102,11 +49,11 @@ awal:
     }
     else
     {
-        menuBarang(db);
+        menuBarang(db, type, userSekarang);
     }
 }
 
-bool tampilBarang(sqlite3 *db)
+bool tampilBarang(sqlite3 *db, int &type, string &userSekarang)
 {
     if (!readDaftarBarangs(db, "*"))
     {
@@ -131,9 +78,9 @@ bool tampilBarang(sqlite3 *db)
     return true;
 }
 
-bool tampilSemuaBarang(sqlite3 *db)
+bool tampilSemuaBarang(sqlite3 *db, int &type, string &userSekarang)
 {
-    tampilBarang(db);
+    tampilBarang(db, type, userSekarang);
     system("pause");
     string t;
     cout << ">> ingin kembali ke menu ? " << endl;
@@ -142,7 +89,7 @@ bool tampilSemuaBarang(sqlite3 *db)
     system("cls");
     if (t == "yes" || t == "Yes")
     {
-        menuBarang(db);
+        menuBarang(db, type, userSekarang);
     }
     else
     {
@@ -150,11 +97,11 @@ bool tampilSemuaBarang(sqlite3 *db)
     }
     return true;
 }
-void UpdateData(sqlite3 *db)
+void UpdateData(sqlite3 *db, int &type, string &userSekarang)
 {
 awal:
     system("cls");
-    tampilBarang(db);
+    tampilBarang(db, type, userSekarang);
     string barang, qty;
     cout << "pilih kode barang : ";
     cin >> barang;
@@ -180,10 +127,10 @@ awal:
     }
     else
     {
-        menuBarang(db);
+        menuBarang(db, type, userSekarang);
     }
 }
-bool CariData(sqlite3 *db)
+bool CariData(sqlite3 *db, int &type, string &userSekarang)
 {
     if (!readDaftarBarangs(db, "*"))
     {
@@ -196,6 +143,7 @@ bool CariData(sqlite3 *db)
         int key;
         cout << "Code barang : ";
         cin >> key;
+        FixCin();
         int found = 0, lokasi;
         for (const auto &barang : DaftarBarangs)
         {
@@ -233,18 +181,19 @@ bool CariData(sqlite3 *db)
         }
         else
         {
-            menuBarang(db);
+            menuBarang(db, type, userSekarang);
         }
     }
     return true;
 }
-void HapusData(sqlite3 *db)
+void HapusData(sqlite3 *db, int &type, string &userSekarang)
 {
     int CodeDicari;
-    tampilBarang(db);
+    tampilBarang(db, type, userSekarang);
     string barang;
     cout << "pilih kode barang : ";
     cin >> barang;
+    FixCin();
     if (deleteDB(db, "DAFTARBARANG", "KODEBARANG", barang))
     {
         cout << "Hapus data berhasil." << endl;
@@ -261,10 +210,83 @@ void HapusData(sqlite3 *db)
     system("cls");
     if (t == "yes" || t == "Yes")
     {
-        menuBarang(db);
+        menuBarang(db, type, userSekarang);
     }
     else
     {
         system("cls");
     }
+}
+
+bool menuBarang(sqlite3 *db, int &type, string &userSekarang)
+{
+    int menu;
+    bool menuState = true;
+    do
+    {
+        headerProgram(db, type, userSekarang);
+        cout << "======================================================" << endl;
+        cout << "MENU SUPPLIER BARANG" << endl;
+        cout << "======================================================" << endl;
+        cout << "1. Masukkan data barang                " << endl;
+        cout << "2. Cari Data                           " << endl;
+        cout << "3. Data barang keseluruhan      " << endl;
+        cout << "4. Hapus data                   " << endl;
+        cout << "5. Edit data                           " << endl;
+        cout << "6. Kembali" << endl;
+        cout << "7. Log Out" << endl;
+        cout << "8. Keluar Program" << endl;
+        cout << "======================================================" << endl;
+        cout << "Masukkan menu: ";
+        cin >> menu;
+        FixCin();
+
+        switch (menu)
+        {
+        case 1:
+            system("CLS");
+            headerProgram(db, type, userSekarang);
+            MasukkanDataBarang(db, type, userSekarang);
+            break;
+        case 2:
+            system("CLS");
+            headerProgram(db, type, userSekarang);
+            CariData(db, type, userSekarang);
+            break;
+        case 3:
+            system("CLS");
+            headerProgram(db, type, userSekarang);
+            tampilSemuaBarang(db, type, userSekarang);
+            break;
+        case 4:
+            system("CLS");
+            headerProgram(db, type, userSekarang);
+            HapusData(db, type, userSekarang);
+            break;
+        case 5:
+            system("CLS");
+            headerProgram(db, type, userSekarang);
+            UpdateData(db, type, userSekarang);
+            break;
+        case 6:
+            menuState = false;
+            system("CLS");
+            return true;
+            break;
+        case 7:
+            menuState = false;
+            system("CLS");
+            return false;
+            break;
+        case 8:
+            menuState = false;
+            system("CLS");
+            cout << "Terimakasih sudah menggunakan aplikasi ini." << endl;
+            system("PAUSE");
+            exit(0);
+        default:
+            cout << "Angka yang dimasukan salah" << endl;
+            break;
+        }
+    } while (menuState);
 }

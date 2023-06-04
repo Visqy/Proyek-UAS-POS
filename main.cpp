@@ -1,9 +1,12 @@
 #include <iostream>
-#include <vector>
+#include <vector> //untuk array dinamis
 #include <string>
-#include <filesystem>
-#include <sqlite3.h>
-#include <conio.h>
+#include <filesystem> //untuk penggunaan memeriksa file ada atau tidak
+#include <sqlite3.h>  //untuk penggunaan database sqlite3
+#include <conio.h>    //untuk penggunaan getch()
+#include <chrono>     //untuk mengubah format waktu
+#include <ctime>      //untuk mendapatkan waktu sekarang
+#include <iomanip>    //untuk penggunaan setw()
 #include "database.cpp"
 #include "login.cpp"
 #include "supplier.cpp"
