@@ -188,6 +188,7 @@ bool CariData(sqlite3 *db, int &type, string &userSekarang)
 }
 void HapusData(sqlite3 *db, int &type, string &userSekarang)
 {
+    awal:
     int CodeDicari;
     tampilBarang(db, type, userSekarang);
     string barang;
@@ -215,6 +216,7 @@ void HapusData(sqlite3 *db, int &type, string &userSekarang)
     else
     {
         system("cls");
+        goto awal;
     }
 }
 
@@ -271,7 +273,6 @@ bool menuBarang(sqlite3 *db, int &type, string &userSekarang)
         case 6:
             menuState = false;
             system("CLS");
-            return true;
             break;
         case 7:
             menuState = false;
