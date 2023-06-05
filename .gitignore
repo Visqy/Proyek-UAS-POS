@@ -3,7 +3,6 @@
 *.com
 *.class
 *.dll
-*.exe
 *.o
 *.so
 
@@ -25,7 +24,6 @@
 *.log
 *.sql
 *.sqlite
-*.db
 *.json
 
 # OS generated files #
