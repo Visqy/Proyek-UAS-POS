@@ -30,6 +30,8 @@ void tambahTransaksi(sqlite3 *db, int &type, string &userSekarang)
     bool cekbarang = false;
     while (tambahBarangJawaban == 'y' || tambahBarangJawaban == 'Y')
     {
+        system("cls");
+        headerProgram(db, type, userSekarang);
         Barang barang;
         cout << "Daftar barang" << endl;
         tampilBarang(db, type, userSekarang);
@@ -42,26 +44,14 @@ void tambahTransaksi(sqlite3 *db, int &type, string &userSekarang)
             FixCin();
             if (!isBarangExists(db, barang.kode))
             {
-            cout << "Barang dengan kode " << barang.kode << " tidak ada di daftar barang!" << endl;
-            cout << "Ulangi Transaksi?(y/n): ";
-            cin >> tambahBarangJawaban;
-
-                if (tambahBarangJawaban != 'y' && tambahBarangJawaban != 'Y')
-                {
-                    cekbarang = true;
-                }
+                cout << "Barang dengan kode " << barang.kode << " tidak ada di daftar barang!" << endl;
+                cekbarang = false;
             }
             else
             {
                 cekbarang = true;
             }
-        }
-        while (!cekbarang);
-
-        if(!cekbarang)
-        {
-            continue;
-        }
+        } while (!cekbarang);
 
         barang.nama = readBarangTransaksi(db, barang.kode, "NAMA_BARANG");
         barang.hargaPerBarang = stoi(readBarangTransaksi(db, barang.kode, "HARGA"));
@@ -76,7 +66,7 @@ void tambahTransaksi(sqlite3 *db, int &type, string &userSekarang)
 
         cout << "Tambah barang lagi? (y/n): ";
         cin >> tambahBarangJawaban;
-}
+    }
     transaksi.hargaTransaksi = harga;
     // Memasukkan transaksi ke database
     if (insertTransaksi(db, transaksi))
@@ -124,11 +114,19 @@ bool menuTransaksi(sqlite3 *db, int &type, string &userSekarang)
         case 2:
             menuState = false;
             system("CLS");
+            if (type == 1)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
             break;
         case 3:
             menuState = false;
             system("CLS");
-            return false;
+            main();
             break;
         case 4:
             menuState = false;
@@ -138,8 +136,10 @@ bool menuTransaksi(sqlite3 *db, int &type, string &userSekarang)
             exit(0);
         default:
             cout << "Angka yang dimasukan salah" << endl;
+            system("PAUSE");
+            system("CLS");
             break;
         }
     } while (menuState);
-    return true;
+    return false;
 }

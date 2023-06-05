@@ -18,7 +18,6 @@ awal:
         cin >> newBarang.id;
         FixCin();
         cout << "Masukkan nama barang: ";
-        cin.ignore();
         getline(cin, newBarang.nama);
         cout << "Masukkan stok barang: ";
         cin >> newBarang.qty;
@@ -82,19 +81,7 @@ bool tampilSemuaBarang(sqlite3 *db, int &type, string &userSekarang)
 {
     tampilBarang(db, type, userSekarang);
     system("pause");
-    string t;
-    cout << ">> ingin kembali ke menu ? " << endl;
-    cout << ">>(yes/no)";
-    cin >> t;
     system("cls");
-    if (t == "yes" || t == "Yes")
-    {
-        menuBarang(db, type, userSekarang);
-    }
-    else
-    {
-        system("cls");
-    }
     return true;
 }
 void UpdateData(sqlite3 *db, int &type, string &userSekarang)
@@ -188,7 +175,7 @@ bool CariData(sqlite3 *db, int &type, string &userSekarang)
 }
 void HapusData(sqlite3 *db, int &type, string &userSekarang)
 {
-    awal:
+awal:
     int CodeDicari;
     tampilBarang(db, type, userSekarang);
     string barang;
@@ -273,11 +260,19 @@ bool menuBarang(sqlite3 *db, int &type, string &userSekarang)
         case 6:
             menuState = false;
             system("CLS");
+            if (type == 1)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
             break;
         case 7:
             menuState = false;
             system("CLS");
-            return false;
+            main();
             break;
         case 8:
             menuState = false;
@@ -287,8 +282,10 @@ bool menuBarang(sqlite3 *db, int &type, string &userSekarang)
             exit(0);
         default:
             cout << "Angka yang dimasukan salah" << endl;
+            system("PAUSE");
+            system("CLS");
             break;
         }
     } while (menuState);
-    return true;
+    return false;
 }

@@ -156,7 +156,7 @@ void menuLaporan(sqlite3 *db, int &type, string &userSekarang)
         case 4:
             menuState = false;
             system("CLS");
-            menuUser(db, type, userSekarang);
+            main();
             break;
         case 5:
             menuState = false;
@@ -166,6 +166,8 @@ void menuLaporan(sqlite3 *db, int &type, string &userSekarang)
             exit(0);
         default:
             cout << "Angka yang dimasukan salah" << endl;
+            system("PAUSE");
+            system("CLS");
             break;
         }
     } while (menuState);

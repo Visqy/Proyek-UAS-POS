@@ -268,6 +268,8 @@ void menuPengaturan(sqlite3 *db, int &type, string &userSekarang)
             exit(0);
         default:
             cout << "Angka yang dimasukan salah" << endl;
+            system("PAUSE");
+            system("CLS");
             break;
         }
     } while (menuState);
