@@ -15,11 +15,12 @@ To run the demo, follow the steps below:
 - The demo will now run, utilizing the "database.db" file for its intended functionality.
 
 Default login account
+```
 user password
 admin 123
 supplier 123
 kasir 123
-
+```
 
 ## Installation
 
