@@ -8,11 +8,17 @@ Simple C++ Point Of Sale using sqlite3 for database
 
 To run the demo, follow the steps below:
 
-- Download the "main.exe" and "database.db" files from the provided source.
+- Download the "main.exe" and "database.db" files from demo folder
 - Save the files to a specific location on your computer.
 - Double-click on the "main.exe" file to execute it.
 - Ensure that the "database.db" file is placed in the appropriate directory as instructed by the application's documentation or developer.
 - The demo will now run, utilizing the "database.db" file for its intended functionality.
+
+Default login account
+user password
+admin 123
+supplier 123
+kasir 123
 
 
 ## Installation
